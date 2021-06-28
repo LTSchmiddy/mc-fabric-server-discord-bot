@@ -1,6 +1,8 @@
 plugins {
 	id 'fabric-loom' version '0.8-SNAPSHOT'
+	id 'com.github.johnrengelman.shadow' version '7.0.0'
 	id 'maven-publish'
+	id 'java'
 }
 
 sourceCompatibility = JavaVersion.VERSION_16
@@ -34,8 +36,49 @@ dependencies {
 
 	// PSA: Some older mods, compiled on Loom 0.2.1, might have outdated Maven POMs.
 	// You may need to force-disable transitiveness on them.
-	implementation("net.dv8tion:JDA:${project.jda_version}")
+	// implementation include ("net.dv8tion:JDA:${project.jda_version}")
+	implementation include("net.dv8tion:JDA:${project.jda_version}")
+	// implementation include (files("deps/JDA-4.3.0_277-fabricCustom.jar"))
+
+/*
+	// ================= JDA Dependencies: ============================
+	implementation include("com.google.code.findbugs:jsr305:3.0.2")
+    implementation include("org.jetbrains:annotations:16.0.1")
+    //Logger
+    implementation include("org.slf4j:slf4j-api:1.7.25")
+    //Web Connection Support
+    implementation include("com.neovisionaries:nv-websocket-client:2.14")
+    implementation include("com.squareup.okhttp3:okhttp:3.13.0")
+	implementation include('com.squareup.okio:okio:2.2.2')
+    //Opus library support
+    implementation include("club.minnced:opus-java:1.1.0")
+    //Collections Utility
+    implementation include("org.apache.commons:commons-collections4:4.1")
+    //we use this only together with opus-java
+    // if that dependency is excluded it also doesn't need jna anymore
+    // since jna is a transitive runtime dependency of opus-java we don't include it explicitly as dependency
+    implementation include("net.java.dev.jna:jna:4.4.0")
+    //General Utility
+    implementation include("net.sf.trove4j:trove4j:3.0.3")
+    implementation include("com.fasterxml.jackson.core:jackson-databind:2.10.1")
+	implementation include(group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib', version: '1.5.20')
+	// =================================================================
+	*/
 }
+
+shadowJar {
+	configurations = [project.configurations.runtimeClasspath]
+	
+	dependencies {
+		// exclude(dependency("com.mojang:minecraft:${project.minecraft_version}"))
+		// exclude(dependency("net.fabricmc:yarn:${project.yarn_mappings}:v2"))
+		// exclude(dependency("net.fabricmc:fabric-loader:${project.loader_version}"))
+		// exclude(dependency("net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"))
+		// exclude(dependency(("net.dv8tion:JDA:${project.jda_version}")))
+		// include(dependency(files("deps/JDA-4.3.0_277-withDependencies.jar")))
+	}
+}
+
 
 processResources {
 	inputs.property "version", project.version
@@ -44,6 +87,7 @@ processResources {
 		expand "version": project.version
 	}
 }
+
 
 tasks.withType(JavaCompile).configureEach {
 	// ensure that the encoding is set to UTF-8, no matter what the system default is

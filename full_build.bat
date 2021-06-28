@@ -1,0 +1,1 @@
+gradlew build && javac ./tools/InjectDependencies.java && java -classpath ./tools/ InjectDependencies "build/libs/server-discord-bot-0.0.1.jar" "./deps/JDA-4.3.0_277.jar" "/META-INF/jars/JDA-4.3.0_277.jar"

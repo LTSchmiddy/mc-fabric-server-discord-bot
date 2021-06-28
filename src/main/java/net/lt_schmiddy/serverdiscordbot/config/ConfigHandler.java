@@ -7,7 +7,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 public class ConfigHandler {
-    public static final File configFile = new File("config/serverdiscordbot.json");
+    public static final File configFile = new File("config/server-discord-bot.json");
     public static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     
     public static Config config;

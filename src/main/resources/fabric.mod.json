@@ -19,7 +19,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "net.lt_schmiddy.serverdiscordbot.ModEntry"
+      "net.lt_schmiddy.serverdiscordbot.BotMain"
     ]
   },
   "mixins": [

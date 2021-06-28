@@ -31,3 +31,6 @@ bin/
 # fabric
 
 run/
+/deps/base_files
+
+/tools/InjectDependencies.class
