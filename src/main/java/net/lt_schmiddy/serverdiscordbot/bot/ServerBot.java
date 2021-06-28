@@ -8,6 +8,8 @@ import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
+
+
 import net.lt_schmiddy.serverdiscordbot.config.BotConfig;
 
 public class ServerBot extends ListenerAdapter {
@@ -19,10 +21,25 @@ public class ServerBot extends ListenerAdapter {
 
         try {
             jda = JDABuilder.createDefault(config.bot_token).addEventListeners(this).build();
-        } catch (LoginException e) {
+            jda.awaitReady();
+            startup();
+        } catch (LoginException|InterruptedException e) {
             System.out.println(e);
             jda = null;
         }
+    }
+    void startup() {
+        System.out.println("Text Channels:");
+        System.out.println(jda.getTextChannels());
+
+    }
+    
+    public boolean isDead() {
+        return jda == null;
+    }
+
+    public void onQuit() {
+        jda.shutdown();
     }
 
     @Override
