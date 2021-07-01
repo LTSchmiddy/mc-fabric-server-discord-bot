@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "modid",
+  "id": "server-discord-bot",
   "version": "${version}",
 
   "name": "Minecraft Server Discord Bot",

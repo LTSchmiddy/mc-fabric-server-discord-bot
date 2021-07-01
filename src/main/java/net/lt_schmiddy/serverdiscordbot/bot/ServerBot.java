@@ -45,6 +45,8 @@ public class ServerBot extends ListenerAdapter {
         jda.shutdown();
     }
 
+    // public void onServer
+
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
     //     if (event.isFromType(ChannelType.TEXT))

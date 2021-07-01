@@ -4,10 +4,9 @@
   "package": "net.lt_schmiddy.serverdiscordbot.mixin",
   "compatibilityLevel": "JAVA_16",
   "mixins": [
+    "OnPlayerConnectMixin"
   ],
-  "client": [
-    "ExampleMixin"
-  ],
+  "client": [],
   "injectors": {
     "defaultRequire": 1
   }

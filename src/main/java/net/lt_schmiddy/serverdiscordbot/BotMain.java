@@ -1,18 +1,33 @@
 package net.lt_schmiddy.serverdiscordbot;
 
+import com.mojang.authlib.GameProfile;
+
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.*;
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.lt_schmiddy.serverdiscordbot.bot.ServerBot;
 import net.lt_schmiddy.serverdiscordbot.config.ConfigHandler;
+import net.lt_schmiddy.serverdiscordbot.commands.*;
 import net.minecraft.server.MinecraftServer;
 
+import net.lt_schmiddy.serverdiscordbot.database.DiscordUserDatabase;
+
 public class BotMain implements ModInitializer, ServerStarted, ServerStopping {
+
+	static DiscordUserDatabase userDb;
+	static DiscordPairCommand discordPairCommand;
+
 	static MinecraftServer server;
+	
 	public static ServerBot[] bots;
 	
 	public static MinecraftServer getServer() {
 		return server;
+	}
+
+	public static DiscordUserDatabase getUserDb() {
+		return userDb;
 	}
 
 	@Override
@@ -23,6 +38,14 @@ public class BotMain implements ModInitializer, ServerStarted, ServerStopping {
 
 		System.out.println("Loading Discord Bots...");
 		ConfigHandler.load();
+
+		// Setting up database:
+		userDb = new DiscordUserDatabase();
+
+		// Register Commands:
+		CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
+			discordPairCommand = new DiscordPairCommand(dispatcher, dedicated);
+        });
 
 		// Registering server shutdown event:
 		ServerLifecycleEvents.SERVER_STARTED.register(this);
@@ -54,5 +77,15 @@ public class BotMain implements ModInitializer, ServerStarted, ServerStopping {
 		ConfigHandler.save();
 	}
 
+	public static void onPlayerConnect() {}
+	public static void onPlayerDisconnect() {}
+	
+	public static int onDiscordPair(GameProfile profile, String discordName) {
+		for (ServerBot bot : bots) {
+			if (bot.isDead()) {continue;}
+			System.out.println("Discord Pair Command");
+		}
 
+		return 0;
+	}
 }

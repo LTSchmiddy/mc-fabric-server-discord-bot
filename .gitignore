@@ -32,5 +32,6 @@ bin/
 
 run/
 /deps/base_files
+/old
 
 /tools/InjectDependencies.class
