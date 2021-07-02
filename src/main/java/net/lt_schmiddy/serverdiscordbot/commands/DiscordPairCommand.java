@@ -5,35 +5,61 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.*;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.brigadier.tree.LiteralCommandNode;
 
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.lt_schmiddy.serverdiscordbot.BotMain;
-import net.lt_schmiddy.serverdiscordbot.bot.ServerBot;
 import net.minecraft.command.argument.*;
-import net.minecraft.network.ClientConnection;
 
 // import static net.minecraft.server.command.CommandManager.*;
 
 public class DiscordPairCommand {
     public DiscordPairCommand(CommandDispatcher<ServerCommandSource> dispatcher, boolean dedicated) {
-        dispatcher.register(CommandManager.literal("discord_pair")
-                .then(CommandManager.argument("discord_id", StringArgumentType.word())
-                    .executes(this::execute_user)
-                        .then(CommandManager.argument("minecraft_name", GameProfileArgumentType.gameProfile())
-                            .requires(source -> source.hasPermissionLevel(4)).executes(this::execute_op))));
+        // Pair request:
+        dispatcher.register(
+            CommandManager.literal("discord_pair_request")
+            .then(
+                CommandManager.argument("discord_id", StringArgumentType.word())
+                .executes(this::pair_request_self)
+                .then(
+                    CommandManager.argument("minecraft_name", GameProfileArgumentType.gameProfile())
+                    .requires(source -> source.hasPermissionLevel(4))
+                    .executes(this::pair_request_op)
+                )
+            )
+        );
+
+        // Pair confirm:
+        dispatcher.register(CommandManager.literal("discord_pair_confirm")
+            .then(
+                CommandManager.argument("discord_id", StringArgumentType.word()).then(
+                    CommandManager.argument("auth_code", StringArgumentType.word()).executes(this::pair_confirm_user)
+                )
+            )   
+        );
     }
 
-    public int execute_user(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+    private int pair_request_self(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         // BotMain.onDiscordPair(context.getSource().getPlayer().getGameProfile(), context.getArgument("discord_name", String.class));
-        return BotMain.onDiscordPair(context.getSource().getPlayer().getGameProfile(), context.getArgument("discord_id", String.class));
+        return BotMain.onDiscordPairRequest(
+            context.getSource().getPlayer().getGameProfile(),
+            context.getArgument("discord_id", String.class)
+        );
     }
 
-    public int execute_op(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        BotMain.onDiscordPair(context.getArgument("minecraft_name", GameProfile.class), context.getArgument("discord_id", String.class));
+    private int pair_request_op(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        return BotMain.onDiscordPairRequest(
+            context.getArgument("minecraft_name", GameProfile.class),
+            context.getArgument("discord_id", String.class)
+        );
+    }
 
-        return 0;
+    private int pair_confirm_user(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        return BotMain.onDiscordPairConfirm(
+            context.getSource().getPlayer().getGameProfile(),
+            context.getArgument("discord_id", String.class),
+            context.getArgument("auth_code", String.class)
+        );
     }
 
 }

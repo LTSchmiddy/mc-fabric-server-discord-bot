@@ -80,12 +80,25 @@ public class BotMain implements ModInitializer, ServerStarted, ServerStopping {
 	public static void onPlayerConnect() {}
 	public static void onPlayerDisconnect() {}
 	
-	public static int onDiscordPair(GameProfile profile, String discordName) {
+	public static int onDiscordPairRequest(GameProfile profile, String discordId) {
 		for (ServerBot bot : bots) {
 			if (bot.isDead()) {continue;}
-			System.out.println("Discord Pair Command");
+			if (bot.discordPairRequest(profile, discordId)) {
+				return 0;
+			}
 		}
 
-		return 0;
+		return -1;
+	}
+
+	public static int onDiscordPairConfirm(GameProfile profile, String discordId, String authCode) {
+		for (ServerBot bot : bots) {
+			if (bot.isDead()) {continue;}
+			if (bot.discordPairConfirm(profile, discordId, authCode)) {
+				return 0;
+			}
+		}
+
+		return -1;
 	}
 }
