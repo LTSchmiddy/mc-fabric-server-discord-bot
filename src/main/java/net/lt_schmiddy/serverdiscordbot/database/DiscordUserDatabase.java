@@ -11,7 +11,10 @@ import java.sql.Timestamp;
 import java.util.Date;
 
 import com.mojang.authlib.GameProfile;
-
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.User;
 import net.lt_schmiddy.serverdiscordbot.config.ConfigHandler;
 
 public class DiscordUserDatabase {
@@ -31,27 +34,14 @@ public class DiscordUserDatabase {
             );
             """;
 
+        // I'm aware that the organization of this section is a but... unusual.
+        // I'm placing each SQL strings with the function that uses it. It's not the usual way one
+        // organises a class definition, but it's very useful here.
+
         public static String ADD_PAIR_REQUEST = """
-            INSERT INTO discord_pair_requests (pair_request_code, pair_request_timestamp, minecraft_id, discord_id)
-            VALUES (?, ?, ?, ?);
-            """;
-
-        public static String COUNT_PAIR_REQUESTS = """
-            SELECT COUNT(*) FROM discord_pair_requests WHERE pair_request_code == ?;
-            """;
-        
-        public static String GET_PAIR_REQUEST = """
-            SELECT * FROM discord_pair_requests WHERE pair_request_code == ?;
-            """;
-        
-        public static String DELETE_PAIR_REQUEST = """
-            DELETE FROM discord_pair_requests WHERE pair_request_code == ?;
-            """;
-
-        public static String ADD_PAIRED_USER = """
-            INSERT INTO discord_users (minecraft_id, discord_id)
-            VALUES (?, ?);
-            """;
+        INSERT INTO discord_pair_requests (pair_request_code, pair_request_timestamp, minecraft_id, discord_id)
+        VALUES (?, ?, ?, ?);
+        """;
         public static PreparedStatement addPairRequest(
             Connection c, 
             String pair_request_code, 
@@ -72,7 +62,11 @@ public class DiscordUserDatabase {
                 e.printStackTrace();
                 return null;
             }
-        }        
+        }
+        
+        public static String COUNT_PAIR_REQUESTS = """
+        SELECT COUNT(*) FROM discord_pair_requests WHERE pair_request_code == ?;
+        """;
         public static PreparedStatement countPairRequests(
             Connection c, 
             String pair_request_code
@@ -88,7 +82,10 @@ public class DiscordUserDatabase {
                 return null;
             }
         }
-
+        
+        public static String GET_PAIR_REQUEST = """
+        SELECT * FROM discord_pair_requests WHERE pair_request_code == ?;
+        """;
         public static PreparedStatement getPairRequest(
             Connection c, 
             String pair_request_code
@@ -104,6 +101,10 @@ public class DiscordUserDatabase {
                 return null;
             }
         }
+
+        public static String DELETE_PAIR_REQUEST = """
+            DELETE FROM discord_pair_requests WHERE pair_request_code == ?;
+            """;
         public static PreparedStatement deletePairRequest(
             Connection c, 
             String pair_request_code
@@ -120,6 +121,12 @@ public class DiscordUserDatabase {
             }
         }
 
+
+        public static String ADD_PAIRED_USER = """
+            INSERT INTO discord_users (minecraft_id, discord_id)
+            VALUES (?, ?);
+            """;
+        
         public static PreparedStatement addPairedUser(
             Connection c, 
             String minecraft_id, 
@@ -136,7 +143,29 @@ public class DiscordUserDatabase {
                 e.printStackTrace();
                 return null;
             }
-        }  
+        } 
+
+
+        public static String GET_PAIRED_USER = """
+            SELECT minecraft_id, discord_id FROM discord_users
+            WHERE minecraft_id = ?;
+            """;
+        public static PreparedStatement getPairedDiscordUser(
+            Connection c, 
+            String minecraft_id
+        ){
+            PreparedStatement p = null;
+            try {
+                p = c.prepareStatement(GET_PAIRED_USER);
+                p.setString(1, minecraft_id);
+
+                return p;
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
     }
 
     Connection conn;
@@ -221,5 +250,53 @@ public class DiscordUserDatabase {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public String getDiscordIDFromMinecraft(GameProfile profile){
+        ResultSet r = null;
+        try {
+            r = SqlQueries.getPairedDiscordUser(conn, profile.getId().toString()).executeQuery();
+            if (!r.next()) {return null;}
+            
+            return r.getString("discord_id");
+
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        }
+        
+    }
+
+    public User getDiscordUserFromMinecraft(JDA jda, GameProfile profile){
+        ResultSet r = null;
+        try {
+            r = SqlQueries.getPairedDiscordUser(conn, profile.getId().toString()).executeQuery();
+            if (!r.next()) {return null;}
+            
+            return jda.retrieveUserById(r.getString("discord_id")).complete();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public Member getDiscordGuildMemberFromMinecraft(JDA jda, Guild guild, GameProfile profile){
+        ResultSet r = null;
+        try {
+            r = SqlQueries.getPairedDiscordUser(conn, profile.getId().toString()).executeQuery();
+            if (!r.next()) {return null;}
+            
+            User u = jda.retrieveUserById(r.getString("discord_id")).complete();
+            if (u == null) {return null;}
+
+            return guild.getMember(u);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+
     }
 }

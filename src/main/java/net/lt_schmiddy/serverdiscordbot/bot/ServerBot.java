@@ -4,20 +4,31 @@ import javax.security.auth.login.LoginException;
 
 import com.mojang.authlib.GameProfile;
 
+import java.util.*;
+
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.lt_schmiddy.serverdiscordbot.BotMain;
 import net.lt_schmiddy.serverdiscordbot.config.BotConfig;
+import net.minecraft.network.ClientConnection;
+import net.minecraft.server.network.ServerPlayerEntity;
 
 public class ServerBot extends ListenerAdapter {
     JDA jda;
     BotConfig config;
+
+    List<TextChannel> botLogChannels = new ArrayList<TextChannel>();
+    List<Role> inGameRoles = new ArrayList<Role>();
 
     public ServerBot(BotConfig p_config) {
         config = p_config;
@@ -34,22 +45,33 @@ public class ServerBot extends ListenerAdapter {
     public void onReady(ReadyEvent event) {
         jda.getPresence().setPresence(OnlineStatus.DO_NOT_DISTURB, Activity.playing(config.startup_message));
 
+        // Assemble Log channels:
+        for(String i : config.bot_log.channels) {
+            TextChannel channel = jda.getTextChannelById(i);
+            if (channel != null) {
+                botLogChannels.add(channel);
+                System.out.println("Channel '" + channel.getName() + "' in Guild '" + channel.getGuild().getName() + "' found.");
+                channel.sendMessage("Server is starting...").queue();
+            } else {
+                System.out.println("Channel ID '" + i + "'' not found");
+            }
+        }
+
+        // Assemble in-game roles:
+        for (String i : config.bot_roles.in_game_roles) {
+            Role role = jda.getRoleById(i);
+
+            if (role != null) { 
+                System.out.println("Role '" + role.getName() + "' in Guild '" + role.getGuild().getName() + "' found.");
+            } else {
+                System.out.println("Role ID '" + i + "' not found.");
+            }
+            inGameRoles.add(role);
+        }
     }
 
     @Override
-    public void onMessageReceived(MessageReceivedEvent event) {
-    //     if (event.isFromType(ChannelType.TEXT))
-    //     {
-    //         System.out.printf("[PM] %s: %s\n", event.getAuthor().getName(),
-    //                                 event.getMessage().getContentDisplay());
-    //     }
-    //     else
-    //     {
-    //         System.out.printf("[%s][%s] %s: %s\n", event.getGuild().getName(),
-    //                     event.getTextChannel().getName(), event.getMember().getEffectiveName(),
-    //                     event.getMessage().getContentDisplay());
-    //     }
-    }
+    public void onMessageReceived(MessageReceivedEvent event) {}
     
     // Methods:
     public boolean isDead() {
@@ -59,18 +81,31 @@ public class ServerBot extends ListenerAdapter {
     public void onServerStart() {
         try {
             jda.awaitReady();
-            jda.getPresence().setPresence(OnlineStatus.ONLINE, Activity.playing(BotMain.getServer().getServerMotd()));
+            // jda.getPresence().setPresence(OnlineStatus.ONLINE, Activity.playing(BotMain.getServer().getServerMotd()));
+            for (Guild i : jda.getGuilds()) {
+                i.modifyNickname(i.getSelfMember(), BotMain.getServer().getServerMotd()).queue();
+            }
+
+            for (TextChannel i : botLogChannels) {
+                i.sendMessage("Server is online!").complete();
+            }
+
+            jda.getPresence().setPresence(OnlineStatus.ONLINE, Activity.playing(config.online_message));
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
     public void onServerStop() {
-        jda.getPresence().setActivity(Activity.playing(config.shutdown_message));
+        jda.getPresence().setPresence(OnlineStatus.DO_NOT_DISTURB, Activity.playing(config.shutdown_message));
+        for (TextChannel i : botLogChannels) {
+            i.sendMessage("Server is shutting down...").complete();
+        }
+
         jda.shutdown();
     }
 
-    public boolean discordPairRequest(GameProfile profile, String discordId) {
+    public boolean onDiscordPairRequest(GameProfile profile, String discordId) {
         if (!config.discordPairing.enabled) {return false;}
         
         User user = jda.retrieveUserById(discordId).complete();
@@ -89,7 +124,7 @@ public class ServerBot extends ListenerAdapter {
         return true;
     }
 
-    public boolean discordPairConfirm(GameProfile profile, String discordId, String authCode) {
+    public boolean onDiscordPairConfirm(GameProfile profile, String discordId, String authCode) {
         if (!config.discordPairing.enabled) {return false;}
         User user = jda.retrieveUserById(discordId).complete();
         if (user == null) {
@@ -107,5 +142,59 @@ public class ServerBot extends ListenerAdapter {
 
         return result;
     }
+
+    public void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player) {
+        // Handle Bot Logging:
+        if (config.bot_log.logPlayerConnect) {
+            for (TextChannel i : botLogChannels){
+                i.sendMessage(player.getGameProfile().getName() + " has joined " + BotMain.getServer().getServerMotd()).queue();
+            }
+        }
+
+        // Handle Bot Roles:
+        if (config.bot_roles.apply_roles){
+            User user = BotMain.getUserDb().getDiscordUserFromMinecraft(jda, player.getGameProfile());
+            if (user == null) {return;}
+
+            for (Guild guild : jda.getGuilds()) {
+                Member member = guild.retrieveMember(user).complete();
+                if (member == null) {continue;}
+
+                for (String rid : config.bot_roles.in_game_roles) {
+                    Role role = guild.getRoleById(rid);
+                    if (role == null) {continue;}
+
+                    guild.addRoleToMember(member, role).queue();
+                }
+            }
+        }
+    }
+    public void onPlayerDisconnect(ServerPlayerEntity player) {
+        if (config.bot_log.logPlayerDisconnect) {
+            for (TextChannel i : botLogChannels){
+                i.sendMessage(player.getGameProfile().getName() + " has left " + BotMain.getServer().getServerMotd()).queue();;
+            }
+        }
+
+        if (config.bot_roles.apply_roles){
+            User user = BotMain.getUserDb().getDiscordUserFromMinecraft(jda, player.getGameProfile());
+            if (user == null) {return;}
+
+            for (Guild guild : jda.getGuilds()) {
+                Member member = guild.retrieveMember(user).complete();
+                if (member == null) {continue;}
+
+                for (String rid : config.bot_roles.in_game_roles) {
+                    Role role = guild.getRoleById(rid);
+                    if (role == null) {continue;}
+
+                    guild.removeRoleFromMember(member, role).queue();
+                }
+            }
+        }
+    }
+
+    // Utility Functions:
+
     
 }

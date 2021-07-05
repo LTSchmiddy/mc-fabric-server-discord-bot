@@ -9,8 +9,9 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.lt_schmiddy.serverdiscordbot.bot.ServerBot;
 import net.lt_schmiddy.serverdiscordbot.config.ConfigHandler;
 import net.lt_schmiddy.serverdiscordbot.commands.*;
+import net.minecraft.network.ClientConnection;
 import net.minecraft.server.MinecraftServer;
-
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.lt_schmiddy.serverdiscordbot.database.DiscordUserDatabase;
 
 public class BotMain implements ModInitializer, ServerStarted, ServerStopping {
@@ -76,14 +77,11 @@ public class BotMain implements ModInitializer, ServerStarted, ServerStopping {
 
 		ConfigHandler.save();
 	}
-
-	public static void onPlayerConnect() {}
-	public static void onPlayerDisconnect() {}
 	
 	public static int onDiscordPairRequest(GameProfile profile, String discordId) {
 		for (ServerBot bot : bots) {
 			if (bot.isDead()) {continue;}
-			if (bot.discordPairRequest(profile, discordId)) {
+			if (bot.onDiscordPairRequest(profile, discordId)) {
 				return 0;
 			}
 		}
@@ -94,11 +92,27 @@ public class BotMain implements ModInitializer, ServerStarted, ServerStopping {
 	public static int onDiscordPairConfirm(GameProfile profile, String discordId, String authCode) {
 		for (ServerBot bot : bots) {
 			if (bot.isDead()) {continue;}
-			if (bot.discordPairConfirm(profile, discordId, authCode)) {
+			if (bot.onDiscordPairConfirm(profile, discordId, authCode)) {
 				return 0;
 			}
 		}
 
 		return -1;
 	}
+
+	public static void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player) {
+		for (ServerBot bot : bots) {
+			if (bot.isDead()) {continue;}
+			bot.onPlayerConnect(connection, player);
+		}
+	}
+
+	public static void onPlayerDisconnect(ServerPlayerEntity player) {
+		for (ServerBot bot : bots) {
+			if (bot.isDead()) {continue;}
+			bot.onPlayerDisconnect(player);
+		}
+	}
+
+	
 }
