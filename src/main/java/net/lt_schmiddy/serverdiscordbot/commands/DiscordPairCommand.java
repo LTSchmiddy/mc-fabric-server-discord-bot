@@ -24,7 +24,10 @@ public class DiscordPairCommand {
                 .then(
                     CommandManager.argument("minecraft_name", GameProfileArgumentType.gameProfile())
                     .requires(source -> source.hasPermissionLevel(4))
-                    .executes(this::pair_request_op)
+                    .executes(this::pair_request_op).then(
+                        CommandManager.argument("force", BoolArgumentType.bool())
+                        .executes(this::pair_request_op_force)
+                    )
                 )
             )
         );
@@ -36,6 +39,23 @@ public class DiscordPairCommand {
                     CommandManager.argument("auth_code", StringArgumentType.word()).executes(this::pair_confirm_user)
                 )
             )   
+        );
+        
+        dispatcher.register(
+            CommandManager.literal("discord_pair_uuid")
+            .requires(source -> source.hasPermissionLevel(4))
+            .then(
+                CommandManager.argument("discord_id", StringArgumentType.word())
+                .then(
+                    CommandManager.argument("minecraft_uuid", StringArgumentType.word())
+                    .executes(this::pair_request_op_uuid)
+                )
+            )
+        );
+        
+        dispatcher.register(CommandManager.literal("discord_clear_all_requests")
+            .requires(source -> source.hasPermissionLevel(4))
+            .executes(this::clear_all_requests)
         );
     }
 
@@ -54,12 +74,36 @@ public class DiscordPairCommand {
         );
     }
 
+    private int pair_request_op_uuid(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        return BotMain.getUserDb().forcePair(
+            context.getArgument("minecraft_uuid", String.class),
+            context.getArgument("discord_id", String.class)
+        );
+    }
+
+    private int pair_request_op_force(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        
+        if (context.getArgument("force", Boolean.class)) {
+            return BotMain.getUserDb().forcePair(
+                context.getArgument("minecraft_name", String.class),
+                context.getArgument("discord_id", String.class)
+            );
+        } else {
+            return pair_request_op(context);
+        }
+    }
+
     private int pair_confirm_user(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         return BotMain.onDiscordPairConfirm(
             context.getSource().getPlayer().getGameProfile(),
             context.getArgument("discord_id", String.class),
             context.getArgument("auth_code", String.class)
         );
+    }    
+    
+    private int clear_all_requests(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        return BotMain.getUserDb().clearAllRequests();
+        
     }
 
 }

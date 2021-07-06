@@ -23,7 +23,7 @@
     ]
   },
   "mixins": [
-    "modid.mixins.json"
+    "server-discord-bot.mixins.json"
   ],
 
   "depends": {

@@ -120,6 +120,8 @@ public class ServerBot extends ListenerAdapter {
         user.openPrivateChannel().queue((channel) ->
         {
             channel.sendMessage("Auth Code: " + code).queue();
+            channel.sendMessage("To confirm pairing, paste and run the following command in the Minecraft server:").queue();
+            channel.sendMessage("`/discord_pair_confirm " + discordId + " " + code + "`").queue();
         });
         return true;
     }
@@ -154,14 +156,18 @@ public class ServerBot extends ListenerAdapter {
         // Handle Bot Roles:
         if (config.bot_roles.apply_roles){
             User user = BotMain.getUserDb().getDiscordUserFromMinecraft(jda, player.getGameProfile());
+            System.out.println("user: " + user);
             if (user == null) {return;}
 
             for (Guild guild : jda.getGuilds()) {
+                System.out.println("guild: " + guild);
                 Member member = guild.retrieveMember(user).complete();
+                System.out.println("member: " + member);
                 if (member == null) {continue;}
 
                 for (String rid : config.bot_roles.in_game_roles) {
                     Role role = guild.getRoleById(rid);
+                    System.out.println("role: " + role);
                     if (role == null) {continue;}
 
                     guild.addRoleToMember(member, role).queue();
@@ -178,14 +184,21 @@ public class ServerBot extends ListenerAdapter {
 
         if (config.bot_roles.apply_roles){
             User user = BotMain.getUserDb().getDiscordUserFromMinecraft(jda, player.getGameProfile());
-            if (user == null) {return;}
+            System.out.println("user: " + user);
+            if (user == null) {
+                return;
+            }
 
             for (Guild guild : jda.getGuilds()) {
+                System.out.println("guild: " + guild);
+                
                 Member member = guild.retrieveMember(user).complete();
+                System.out.println("member: " + member);
                 if (member == null) {continue;}
 
                 for (String rid : config.bot_roles.in_game_roles) {
                     Role role = guild.getRoleById(rid);
+                    System.out.println("role: " + role);
                     if (role == null) {continue;}
 
                     guild.removeRoleFromMember(member, role).queue();

@@ -120,6 +120,24 @@ public class DiscordUserDatabase {
                 return null;
             }
         }
+    
+
+        public static String DELETE_ALL_PAIR_REQUESTS= """
+            DELETE FROM discord_pair_requests;
+            """;
+        public static PreparedStatement deleteAllPairRequests(
+            Connection c
+        ){
+            PreparedStatement p = null;
+            try {
+                p = c.prepareStatement(DELETE_ALL_PAIR_REQUESTS);
+                
+                return p;
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
 
 
         public static String ADD_PAIRED_USER = """
@@ -241,7 +259,7 @@ public class DiscordUserDatabase {
                 && r_minecraftId.equals(profile.getId().toString())
             ) {
                 SqlQueries.addPairedUser(conn, r_minecraftId, r_discordId).execute();
-                SqlQueries.getPairRequest(conn, authCode).executeQuery();
+                SqlQueries.deletePairRequest(conn, authCode).execute();
                 return true;
             } else {
                 return false;
@@ -249,6 +267,39 @@ public class DiscordUserDatabase {
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    public int forcePair(GameProfile profile, String discordId) {
+        try {
+            SqlQueries.addPairedUser(conn, profile.getId().toString(), discordId).execute();
+            return 1;
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public int forcePair(String uuid, String discordId) {
+        try {
+            SqlQueries.addPairedUser(conn, uuid, discordId).execute();
+            return 1;
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public int clearAllRequests() {
+        try {
+            SqlQueries.deleteAllPairRequests(conn).execute();
+            return 1;
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return -1;
         }
     }
 
