@@ -24,7 +24,8 @@ public class DiscordPairCommand {
                 .then(
                     CommandManager.argument("minecraft_name", GameProfileArgumentType.gameProfile())
                     .requires(source -> source.hasPermissionLevel(4))
-                    .executes(this::pair_request_op).then(
+                    .executes(this::pair_request_op)
+                    .then(
                         CommandManager.argument("force", BoolArgumentType.bool())
                         .executes(this::pair_request_op_force)
                     )
@@ -68,10 +69,16 @@ public class DiscordPairCommand {
     }
 
     private int pair_request_op(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        return BotMain.onDiscordPairRequest(
-            context.getArgument("minecraft_name", GameProfile.class),
-            context.getArgument("discord_id", String.class)
-        );
+        // try {
+            return BotMain.onDiscordPairRequest(
+                // context.getArgument("minecraft_name", GameProfile.class),
+                (GameProfile)(GameProfileArgumentType.getProfileArgument(context, "minecraft_name").toArray()[0]),
+                context.getArgument("discord_id", String.class)
+            );
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        //     return -1;
+        // }
     }
 
     private int pair_request_op_uuid(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
@@ -85,7 +92,7 @@ public class DiscordPairCommand {
         
         if (context.getArgument("force", Boolean.class)) {
             return BotMain.getUserDb().forcePair(
-                context.getArgument("minecraft_name", String.class),
+                (GameProfile)(GameProfileArgumentType.getProfileArgument(context, "minecraft_name").toArray()[0]),
                 context.getArgument("discord_id", String.class)
             );
         } else {

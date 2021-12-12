@@ -119,9 +119,11 @@ public class ServerBot extends ListenerAdapter {
         String code = BotMain.getUserDb().createPairRequest(profile, discordId, config.discordPairing.pair_code_length);
         user.openPrivateChannel().queue((channel) ->
         {
-            channel.sendMessage("Auth Code: " + code).queue();
-            channel.sendMessage("To confirm pairing, paste and run the following command in the Minecraft server:").queue();
-            channel.sendMessage("`/discord_pair_confirm " + discordId + " " + code + "`").queue();
+            channel.sendMessage(
+                "Auth Code: " + code
+                + "\nTo confirm pairing, paste and run the following command in the Minecraft server:"
+                + "\n`/discord_pair_confirm " + discordId + " " + code + "`"
+            ).queue();
         });
         return true;
     }
